@@ -1,4 +1,4 @@
-# Chat con Datos (PMO + IA + PostgreSQL)
+# Chat con Datos (IA + PostgreSQL)
 
 Script que responde preguntas en lenguaje natural sobre el estado de
 proyectos, traduciéndolas a SQL con un LLM, ejecutándolas contra una base
