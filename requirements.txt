@@ -1,0 +1,5 @@
+google-genai
+pydantic
+psycopg2-binary
+tenacity
+pytest
