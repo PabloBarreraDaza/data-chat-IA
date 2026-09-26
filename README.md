@@ -1,4 +1,4 @@
-# Chat con Datos (PMO + IA + PostgreSQL)
+# Chat con Datos (IA + PostgreSQL)
 
 Script que responde preguntas en lenguaje natural sobre el estado de
 proyectos, traduciéndolas a SQL con un LLM, ejecutándolas contra una base
@@ -7,7 +7,7 @@ natural a partir de los resultados obtenidos.
 
 ## Por qué existe
 
-Es la evolución natural del Proyecto 2: en vez de partir de un CSV fijo,
+En vez de partir de un CSV fijo,
 aquí el usuario pregunta lo que quiera y el sistema decide qué consultar.
 Es la base de cualquier "AI Project Assistant" más grande (Jira, GitHub,
 Slack...) — aquí se aprende el patrón con una sola fuente de datos antes
