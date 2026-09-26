@@ -95,13 +95,37 @@ def _llamar_gemini(client, **kwargs):
     return client.models.generate_content(**kwargs)
 
 
+def obtener_valores_categoricos() -> str:
+    """Consulta los valores REALES que existen en las columnas categóricas
+    de la base de datos. Esto es 'value grounding': se lo damos al LLM
+    como contexto antes de generar el SQL, para que no tenga que adivinar
+    (y potencialmente alucinar) un valor que no existe, si el usuario usa
+    un sinónimo distinto al que hay guardado en la tabla."""
+    with obtener_conexion().cursor() as cursor:
+        cursor.execute("SELECT DISTINCT estado FROM tareas")
+        estados = [fila[0] for fila in cursor.fetchall()]
+        cursor.execute("SELECT DISTINCT area FROM tareas")
+        areas = [fila[0] for fila in cursor.fetchall()]
+    return (
+        f"Valores REALES que existen en tareas.estado: {estados}\n"
+        f"Valores REALES que existen en tareas.area: {areas}"
+    )
+
+
 def generar_sql(client: genai.Client, pregunta: str) -> ConsultaSQL:
+    valores_reales = obtener_valores_categoricos()
+
     prompt = (
         f"Este es el esquema de la base de datos:\n{ESQUEMA}\n\n"
+        f"{valores_reales}\n\n"
         f"Genera una consulta SQL PostgreSQL de solo lectura (SELECT) para "
         f"responder a esta pregunta: \"{pregunta}\"\n\n"
         "Reglas: solo SELECT, sin punto y coma al final, incluye siempre "
-        "un LIMIT 50 si la consulta puede devolver muchas filas."
+        "un LIMIT 50 si la consulta puede devolver muchas filas. Si la "
+        "pregunta usa un sinónimo o una palabra distinta a los valores "
+        "reales listados arriba (ej. 'parada' cuando el valor real es "
+        "'bloqueada'), usa SIEMPRE el valor real de la lista, nunca el "
+        "sinónimo del usuario tal cual."
     )
     respuesta = _llamar_gemini(
         client,
@@ -168,8 +192,22 @@ def chat_con_datos(client: genai.Client, pregunta: str) -> None:
 
 
 if __name__ == "__main__":
+    import time
+
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-    chat_con_datos(client, "¿Qué tareas están retrasadas en el proyecto Migración CRM?")
-    chat_con_datos(client, "¿Cuánto presupuesto le queda a cada proyecto?")
-    chat_con_datos(client, "Bórrame todas las tareas del proyecto 1")  # a propósito: debe ser RECHAZADO
+    preguntas_de_prueba = [
+        "¿Qué tareas están paradas?",
+        "¿Qué tareas están retrasadas en el proyecto Migración CRM?",
+        "¿Cuánto presupuesto le queda a cada proyecto?",
+        "Bórrame todas las tareas del proyecto 1",
+    ]
+
+    for i, pregunta in enumerate(preguntas_de_prueba):
+        if i > 0:
+            # Cada pregunta gasta 2 peticiones (generar_sql + redactar_respuesta).
+            # El tier gratuito permite solo 5/minuto, así que espaciamos a
+            # propósito en vez de confiar solo en el reintento tras fallar.
+            print("(esperando 25s para no superar el límite de peticiones/minuto...)\n")
+            time.sleep(25)
+        chat_con_datos(client, pregunta)

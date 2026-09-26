@@ -7,7 +7,7 @@ o en el futuro) sí generase SQL peligroso.
 """
 
 import pytest
-from chat_con_datos import validar_sql_es_seguro
+from src.chat_con_datos import validar_sql_es_seguro
 
 
 def test_select_simple_pasa():
